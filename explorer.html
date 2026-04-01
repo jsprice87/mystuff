@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wood Intelligence Puzzle Explorer</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+}
+h1 {
+    font-size: 1.6em;
+    color: #e0e0ff;
+    margin-bottom: 8px;
+    text-align: center;
+}
+.subtitle {
+    color: #aaa;
+    font-size: 0.95em;
+    margin-bottom: 20px;
+    text-align: center;
+    max-width: 600px;
+    line-height: 1.5;
+}
+.controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+button {
+    background: #16213e;
+    color: #7ec8e3;
+    border: 2px solid #7ec8e3;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.05em;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+button:hover {
+    background: #7ec8e3;
+    color: #1a1a2e;
+}
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+button.nav-btn {
+    padding: 10px 18px;
+    font-size: 0.95em;
+}
+.counter {
+    color: #7ec8e3;
+    font-size: 0.95em;
+    min-width: 120px;
+    text-align: center;
+}
+.grid-container {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    margin-bottom: 20px;
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(10, 32px);
+    grid-template-rows: repeat(15, 32px);
+    gap: 0;
+}
+.cell {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85em;
+    color: #ccc;
+}
+.legend-swatch {
+    width: 18px;
+    height: 18px;
+    border: 1px solid #555;
+    border-radius: 3px;
+}
+.status {
+    color: #aaa;
+    font-size: 0.85em;
+    margin-top: 10px;
+    text-align: center;
+}
+.rules {
+    background: #16213e;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 15px;
+    max-width: 500px;
+    font-size: 0.85em;
+    line-height: 1.6;
+    color: #bbb;
+}
+.rules h3 {
+    color: #7ec8e3;
+    margin-bottom: 8px;
+    font-size: 1em;
+}
+.rules ul {
+    padding-left: 18px;
+}
+.rules li {
+    margin-bottom: 4px;
+}
+.solving-indicator {
+    display: none;
+    color: #ffeb3b;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+</style>
+</head>
+<body>
+
+<h1>Wood Intelligence Puzzle Explorer</h1>
+<div class="subtitle">
+    Interactive explorer for the 10&times;15 wooden Tetris puzzle with 40 pieces (8 types &times; 5 each).
+    Each click generates a unique random solution.
+</div>
+
+<div class="legend">
+    <div class="legend-item"><div class="legend-swatch" style="background:#e0e0e0"></div>White (domino)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#333"></div>Black (bar)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#4caf50"></div>Green (square)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#ff9800"></div>Orange (U)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#ffeb3b"></div>Yellow (T)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#f44336"></div>Red (S)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#2196f3"></div>Blue (L)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#9c27b0"></div>Purple (corner)</div>
+</div>
+
+<div class="controls">
+    <button class="nav-btn" id="prevBtn" onclick="showPrev()" disabled>&larr; Prev</button>
+    <button id="generateBtn" onclick="generateSolution()">Generate Solution</button>
+    <button class="nav-btn" id="nextBtn" onclick="showNext()" disabled>Next &rarr;</button>
+</div>
+<div class="counter" id="counter">Click to start</div>
+<div class="solving-indicator" id="solvingIndicator">Solving...</div>
+
+<div class="grid-container">
+    <div class="grid" id="grid"></div>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="rules">
+    <h3>Uniqueness Rules &amp; Assumptions</h3>
+    <ul>
+        <li><strong>Board:</strong> 10 wide &times; 15 tall = 150 cells</li>
+        <li><strong>Pieces:</strong> 8 types &times; 5 copies = 40 pieces total</li>
+        <li><strong>Mirror images:</strong> Horizontal and vertical reflections of a solution are NOT counted as unique</li>
+        <li><strong>Identical pieces:</strong> Swapping two pieces of the same type (e.g., two green squares) does NOT create a new unique solution</li>
+        <li><strong>Rotations:</strong> Since the board is not square (10&times;15), 90&deg; rotations produce a different board shape and are not applicable</li>
+        <li><strong>Piece flipping:</strong> Physical pieces can be flipped over, so both sides of each piece are usable (all orientations considered)</li>
+    </ul>
+    <p style="margin-top:10px;color:#7ec8e3;" id="totalCount"></p>
+</div>
+
+<script>
+// Puzzle definitions
+const W = 10, H = 15;
+
+const PIECES = {
+    white:  { cells: [[0,0],[0,1]], count: 5 },
+    black:  { cells: [[0,0],[1,0],[2,0],[3,0]], count: 5 },
+    green:  { cells: [[0,0],[0,1],[1,0],[1,1]], count: 5 },
+    orange: { cells: [[0,0],[0,2],[1,0],[1,1],[1,2]], count: 5 },
+    yellow: { cells: [[0,0],[0,1],[0,2],[1,1]], count: 5 },
+    red:    { cells: [[0,0],[1,0],[1,1],[2,1]], count: 5 },
+    blue:   { cells: [[0,0],[1,0],[2,0],[2,1]], count: 5 },
+    purple: { cells: [[0,0],[1,0],[1,1]], count: 5 },
+};
+
+const COLORS = {
+    white:  { bg: '#e0e0e0', fg: '#333', label: 'W' },
+    black:  { bg: '#333333', fg: '#fff', label: 'B' },
+    green:  { bg: '#4caf50', fg: '#fff', label: 'G' },
+    orange: { bg: '#ff9800', fg: '#000', label: 'O' },
+    yellow: { bg: '#ffeb3b', fg: '#333', label: 'Y' },
+    red:    { bg: '#f44336', fg: '#fff', label: 'R' },
+    blue:   { bg: '#2196f3', fg: '#fff', label: 'L' },
+    purple: { bg: '#9c27b0', fg: '#fff', label: 'P' },
+};
+
+// Generate all orientations of a piece
+function normalize(cells) {
+    const minR = Math.min(...cells.map(c => c[0]));
+    const minC = Math.min(...cells.map(c => c[1]));
+    const shifted = cells.map(c => [c[0]-minR, c[1]-minC]);
+    shifted.sort((a,b) => a[0]-b[0] || a[1]-b[1]);
+    return shifted;
+}
+
+function cellsKey(cells) {
+    return cells.map(c => c[0]+','+c[1]).join(';');
+}
+
+function generateOrientations(cells) {
+    const seen = new Set();
+    const result = [];
+    let current = cells.map(c => [...c]);
+
+    for (let rot = 0; rot < 4; rot++) {
+        // Current rotation
+        let norm = normalize(current);
+        let key = cellsKey(norm);
+        if (!seen.has(key)) { seen.add(key); result.push(norm); }
+
+        // Reflection
+        let reflected = current.map(c => [-c[0], c[1]]);
+        norm = normalize(reflected);
+        key = cellsKey(norm);
+        if (!seen.has(key)) { seen.add(key); result.push(norm); }
+
+        // Rotate 90 CW
+        current = current.map(c => [c[1], -c[0]]);
+    }
+    return result;
+}
+
+// Precompute placements
+const pieceTypes = Object.keys(PIECES);
+const allOrientations = {};
+for (const pt of pieceTypes) {
+    allOrientations[pt] = generateOrientations(PIECES[pt].cells);
+}
+
+// Precompute valid placements by cell position
+const placementsByCell = new Map();
+for (let ptIdx = 0; ptIdx < pieceTypes.length; ptIdx++) {
+    const pt = pieceTypes[ptIdx];
+    for (const orient of allOrientations[pt]) {
+        const [fr, fc] = orient[0]; // first cell in scan order
+        for (let ar = 0; ar < H; ar++) {
+            for (let ac = 0; ac < W; ac++) {
+                const offR = ar - fr, offC = ac - fc;
+                let valid = true;
+                const absCells = [];
+                let mask = 0n;
+                for (const [dr, dc] of orient) {
+                    const cr = offR + dr, cc = offC + dc;
+                    if (cr < 0 || cr >= H || cc < 0 || cc >= W) { valid = false; break; }
+                    absCells.push([cr, cc]);
+                    mask |= 1n << BigInt(cr * W + cc);
+                }
+                if (valid) {
+                    const pos = ar * W + ac;
+                    if (!placementsByCell.has(pos)) placementsByCell.set(pos, []);
+                    placementsByCell.get(pos).push({ ptIdx, mask, cells: absCells });
+                }
+            }
+        }
+    }
+}
+
+// Fisher-Yates shuffle
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+// Solve with randomized ordering
+function solveRandom() {
+    const remaining = pieceTypes.map(pt => PIECES[pt].count);
+    const cellPiece = new Array(W * H).fill(null);
+    const fullMask = (1n << BigInt(W * H)) - 1n;
+    let boardMask = 0n;
+    let found = null;
+
+    // Pre-shuffle placements for each cell for randomness
+    const shuffledPlacements = new Map();
+    for (const [pos, placements] of placementsByCell) {
+        shuffledPlacements.set(pos, shuffle([...placements]));
+    }
+
+    function firstEmpty(mask) {
+        const inv = (~mask) & fullMask;
+        if (inv === 0n) return [-1, -1];
+        const bit = inv & (-inv);
+        const pos = Number(bit.toString(2).length - 1);
+        return [Math.floor(pos / W), pos % W];
+    }
+
+    function backtrack() {
+        if (found) return;
+        const [r, c] = firstEmpty(boardMask);
+        if (r === -1) {
+            found = [...cellPiece];
+            return;
+        }
+        const pos = r * W + c;
+        const placements = shuffledPlacements.get(pos) || [];
+
+        for (const { ptIdx, mask, cells } of placements) {
+            if (found) return;
+            if (remaining[ptIdx] === 0) continue;
+            if ((boardMask & mask) !== 0n) continue;
+
+            boardMask |= mask;
+            remaining[ptIdx]--;
+            const ptName = pieceTypes[ptIdx];
+            for (const [cr, cc] of cells) cellPiece[cr * W + cc] = ptName;
+
+            backtrack();
+
+            if (found) return;
+            boardMask &= ~mask;
+            remaining[ptIdx]++;
+            for (const [cr, cc] of cells) cellPiece[cr * W + cc] = null;
+        }
+    }
+
+    backtrack();
+    return found;
+}
+
+// Solution history
+let solutions = [];
+let currentIndex = -1;
+
+function displaySolution(cellPiece) {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    for (let r = 0; r < H; r++) {
+        for (let c = 0; c < W; c++) {
+            const pt = cellPiece[r * W + c];
+            const div = document.createElement('div');
+            div.className = 'cell';
+            const color = COLORS[pt] || { bg: '#888', fg: '#000', label: '?' };
+            div.style.background = color.bg;
+            div.style.color = color.fg;
+            div.textContent = color.label;
+
+            // Borders between different pieces
+            const borders = [];
+            if (r === 0 || cellPiece[(r-1)*W+c] !== pt) borders.push('border-top: 2px solid rgba(0,0,0,0.6)');
+            else borders.push('border-top: 1px solid rgba(0,0,0,0.1)');
+            if (r === H-1 || cellPiece[(r+1)*W+c] !== pt) borders.push('border-bottom: 2px solid rgba(0,0,0,0.6)');
+            else borders.push('border-bottom: 1px solid rgba(0,0,0,0.1)');
+            if (c === 0 || cellPiece[r*W+c-1] !== pt) borders.push('border-left: 2px solid rgba(0,0,0,0.6)');
+            else borders.push('border-left: 1px solid rgba(0,0,0,0.1)');
+            if (c === W-1 || cellPiece[r*W+c+1] !== pt) borders.push('border-right: 2px solid rgba(0,0,0,0.6)');
+            else borders.push('border-right: 1px solid rgba(0,0,0,0.1)');
+
+            div.style.cssText += ';' + borders.join(';');
+            grid.appendChild(div);
+        }
+    }
+}
+
+function updateControls() {
+    document.getElementById('prevBtn').disabled = currentIndex <= 0;
+    document.getElementById('nextBtn').disabled = currentIndex >= solutions.length - 1;
+    if (currentIndex >= 0) {
+        document.getElementById('counter').textContent =
+            `Solution ${currentIndex + 1} of ${solutions.length} generated`;
+    }
+}
+
+function generateSolution() {
+    const btn = document.getElementById('generateBtn');
+    const indicator = document.getElementById('solvingIndicator');
+    btn.disabled = true;
+    indicator.style.display = 'block';
+
+    // Use setTimeout to allow UI to update before blocking solver runs
+    setTimeout(() => {
+        const t0 = performance.now();
+        const sol = solveRandom();
+        const elapsed = performance.now() - t0;
+
+        if (sol) {
+            solutions.push(sol);
+            currentIndex = solutions.length - 1;
+            displaySolution(sol);
+            document.getElementById('status').textContent =
+                `Generated in ${elapsed.toFixed(0)}ms`;
+        } else {
+            document.getElementById('status').textContent = 'No solution found (unexpected!)';
+        }
+
+        btn.disabled = false;
+        indicator.style.display = 'none';
+        updateControls();
+    }, 50);
+}
+
+function showPrev() {
+    if (currentIndex > 0) {
+        currentIndex--;
+        displaySolution(solutions[currentIndex]);
+        updateControls();
+    }
+}
+
+function showNext() {
+    if (currentIndex < solutions.length - 1) {
+        currentIndex++;
+        displaySolution(solutions[currentIndex]);
+        updateControls();
+    }
+}
+
+// Initialize empty grid
+(function initGrid() {
+    const grid = document.getElementById('grid');
+    for (let i = 0; i < W * H; i++) {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        div.style.background = '#2a2a4a';
+        div.style.border = '1px solid #333';
+        grid.appendChild(div);
+    }
+})();
+</script>
+</body>
+</html>
