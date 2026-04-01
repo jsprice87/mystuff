@@ -74,7 +74,7 @@ def _cell_borders(grid, r, c):
     return borders
 
 
-def generate_html(solutions, filename="solutions.html"):
+def generate_html(solutions, filename="solutions.html", total_unique=None):
     """Generate an HTML file showing all solutions with colored grids.
 
     Each solution is rendered as a CSS grid with colored cells and borders
@@ -189,8 +189,15 @@ h1 {
 """]
 
     total = len(solutions)
+    display_total = total_unique if total_unique is not None else total
     html_parts.append(f'<h1>Wood Intelligence Puzzle Solutions</h1>\n')
-    html_parts.append(f'<div class="summary">Found <strong>{total}</strong> unique solution{"s" if total != 1 else ""}</div>\n')
+    if total_unique and total_unique > total:
+        html_parts.append(
+            f'<div class="summary">Found <strong>{display_total:,}</strong> unique solutions '
+            f'(showing {total:,} of them)</div>\n')
+    else:
+        html_parts.append(
+            f'<div class="summary">Found <strong>{display_total:,}</strong> unique solution{"s" if display_total != 1 else ""}</div>\n')
 
     # Legend
     html_parts.append('<div class="legend">\n')
