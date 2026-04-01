@@ -1,0 +1,1 @@
+Redirecting to main branch for latest results. See: https://github.com/jsprice87/mystuff/blob/claude/puzzle-solution-counter-vHWBv/RESULTS.md
